@@ -82,7 +82,7 @@ export default function Admin() {
   const [newPassword, setNewPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   useEffect(() => {
-    if (!authLoading && !user) navigate('/login');
+    if (!authLoading && !user) navigate('/admin-login');
     if (!adminLoading && !isAdmin && user) navigate('/dashboard');
   }, [user, authLoading, isAdmin, adminLoading, navigate]);
 
