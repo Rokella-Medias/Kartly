@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Shield } from 'lucide-react';
 import kartlyLogo from '@/assets/kartly-logo.png';
 
 export default function Login() {
@@ -25,7 +25,21 @@ export default function Login() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/dashboard');
+      const checkRoleAndNavigate = async () => {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (data) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
+      };
+      checkRoleAndNavigate();
     }
   }, [user, authLoading, navigate]);
 
@@ -60,6 +74,20 @@ export default function Login() {
       setError(error.message);
       setLoading(false);
     } else {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', currentUser.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (data) {
+          navigate('/admin');
+          return;
+        }
+      }
       navigate('/dashboard');
     }
   };
@@ -237,12 +265,20 @@ export default function Login() {
                   )}
                 </Button>
                 
-                <p className="text-sm text-muted-foreground text-center">
-                  Don't have an account?{' '}
-                  <Link to="/signup" className="text-accent hover:underline font-medium">
-                    Sign up
-                  </Link>
-                </p>
+                <div className="text-center space-y-2 w-full">
+                  <p className="text-sm text-muted-foreground">
+                    Don't have an account?{' '}
+                    <Link to="/signup" className="text-accent hover:underline font-medium">
+                      Sign up
+                    </Link>
+                  </p>
+                  <div className="pt-2 border-t border-border/50">
+                    <Link to="/admin-login" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent font-medium transition-colors">
+                      <Shield className="w-3.5 h-3.5" />
+                      Administrator Portal
+                    </Link>
+                  </div>
+                </div>
               </CardFooter>
             </form>
           </Card>

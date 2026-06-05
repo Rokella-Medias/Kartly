@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
@@ -11,6 +11,7 @@ interface RequireProfileProps {
 export function RequireProfile({ children }: RequireProfileProps) {
   const { user, loading: authLoading } = useAuth();
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
     if (!user) {
@@ -56,7 +57,8 @@ export function RequireProfile({ children }: RequireProfileProps) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    const isAdminRoute = location.pathname.startsWith('/admin');
+    return <Navigate to={isAdminRoute ? "/admin-login" : "/login"} replace />;
   }
 
   if (!profileComplete) {
