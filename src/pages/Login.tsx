@@ -265,20 +265,12 @@ export default function Login() {
                   )}
                 </Button>
                 
-                <div className="text-center space-y-2 w-full">
-                  <p className="text-sm text-muted-foreground">
-                    Don't have an account?{' '}
-                    <Link to="/signup" className="text-accent hover:underline font-medium">
-                      Sign up
-                    </Link>
-                  </p>
-                  <div className="pt-2 border-t border-border/50">
-                    <Link to="/admin-login" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-accent font-medium transition-colors">
-                      <Shield className="w-3.5 h-3.5" />
-                      Administrator Portal
-                    </Link>
-                  </div>
-                </div>
+                <p className="text-sm text-muted-foreground text-center w-full">
+                  Don't have an account?{' '}
+                  <Link to="/signup" className="text-accent hover:underline font-medium">
+                    Sign up
+                  </Link>
+                </p>
               </CardFooter>
             </form>
           </Card>
