@@ -1,0 +1,174 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 
+  Design System: Kartly Analytics Dashboard
+  Professional e-commerce analytics with bold blue primary and vibrant orange accents — matching the Kartly brand.
+*/
+
+@layer base {
+  :root {
+    /* Core palette - Kartly brand blue */
+    --background: 220 30% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary - Kartly bold blue */
+    --primary: 215 85% 34%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Secondary - Soft slate */
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent - Kartly vibrant orange */
+    --accent: 28 92% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 215 85% 34%;
+
+    --radius: 0.75rem;
+
+    /* Marketplace colors */
+    --amazon: 33 100% 50%;
+    --flipkart: 213 95% 55%;
+    --meesho: 328 91% 59%;
+
+    /* Success/Warning states */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Chart colors */
+    --chart-1: 215 85% 34%;
+    --chart-2: 28 92% 55%;
+    --chart-3: 33 100% 50%;
+    --chart-4: 213 95% 55%;
+    --chart-5: 328 91% 59%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(215 85% 30%), hsl(215 85% 42%));
+    --gradient-accent: linear-gradient(135deg, hsl(28 92% 50%), hsl(28 92% 62%));
+    --gradient-hero: linear-gradient(135deg, hsl(215 85% 20%), hsl(215 85% 34%));
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(215 85% 34% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(215 85% 34% / 0.1), 0 2px 4px -2px hsl(215 85% 34% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(215 85% 34% / 0.1), 0 4px 6px -4px hsl(215 85% 34% / 0.1);
+    --shadow-glow: 0 0 20px hsl(28 92% 55% / 0.3);
+
+    /* Sidebar */
+    --sidebar-background: 215 85% 20%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 28 92% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 85% 30%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 85% 30%;
+    --sidebar-ring: 28 92% 55%;
+  }
+
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 28 92% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 215 85% 42%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 28 92% 55%;
+
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 28 92% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 28 92% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
+  }
+  
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .marketplace-amazon {
+    @apply bg-amazon text-white;
+  }
+  
+  .marketplace-flipkart {
+    @apply bg-flipkart text-white;
+  }
+  
+  .marketplace-meesho {
+    @apply bg-meesho text-white;
+  }
+}
