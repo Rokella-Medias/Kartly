@@ -2,13 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAAjT-fGJUWm_qgybrfK7Znqms4-aDaRVA",
-  authDomain: "kartly-498510.firebaseapp.com",
-  projectId: "kartly-498510",
-  storageBucket: "kartly-498510.firebasestorage.app",
-  messagingSenderId: "756754296058",
-  appId: "1:756754296058:web:5470f2d80d037125bd2d43",
-  measurementId: "G-5CYLDY5WVY"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
