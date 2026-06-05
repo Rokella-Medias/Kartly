@@ -19,6 +19,20 @@ export function RequireProfile({ children }: RequireProfileProps) {
     }
 
     const checkProfile = async () => {
+      // First, check if the user is an admin.
+      // Admins should bypass the onboarding profile completion check.
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (roleData) {
+        setProfileComplete(true);
+        return;
+      }
+
       const { data } = await supabase
         .from('profiles')
         .select('full_name, business_name')
