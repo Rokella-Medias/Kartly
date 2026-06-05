@@ -152,7 +152,7 @@ export default function Dashboard() {
       <header className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container mx-auto px-3 sm:px-4 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-3">
-            <img src={kartlyLogo} alt="Kartly" className="h-8 sm:h-9 w-auto" />
+            <img src={kartlyLogo} alt="Kartly" className="h-10 sm:h-11 w-auto" />
           </div>
           
           <div className="flex items-center gap-1 sm:gap-2 md:gap-4">

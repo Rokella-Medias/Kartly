@@ -303,7 +303,7 @@ export default function Reports() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <img src={kartlyLogo} alt="Kartly" className="h-9 w-auto" />
+            <img src={kartlyLogo} alt="Kartly" className="h-11 w-auto" />
           </div>
           
           <div className="flex items-center gap-4">

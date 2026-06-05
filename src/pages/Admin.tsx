@@ -247,7 +247,7 @@ export default function Admin() {
       <header className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={kartlyLogo} alt="Kartly" className="h-9 w-auto" />
+            <img src={kartlyLogo} alt="Kartly" className="h-11 w-auto" />
             <Badge variant="secondary" className="ml-1">
               <Shield className="w-3 h-3 mr-1" />
               Admin

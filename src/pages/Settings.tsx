@@ -174,7 +174,7 @@ export default function Settings() {
       <header className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={kartlyLogo} alt="Kartly" className="h-9 w-auto" />
+            <img src={kartlyLogo} alt="Kartly" className="h-11 w-auto" />
           </div>
 
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
