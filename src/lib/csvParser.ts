@@ -553,6 +553,7 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
   }
 
   if (detailedRows.length > 0) {
+    const rowInvoiceCounts: Record<string, number> = {};
     detailedRows.forEach((rowInfo, index) => {
       const { text: blockText, date, hsn } = rowInfo;
       const hsnIdx = blockText.indexOf(hsn);
@@ -591,12 +592,25 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
       description = description.replace(/\s+/g, ' ').trim();
       description = description.replace(/^\s*-\s*/, '').trim();
       
+      // Extract original invoice number if mentioned in the block (different from invoiceNo)
+      let rowInvoiceNo = invoiceNo;
+      const invMatch = blockText.match(/\b([A-Z]+(?:-[A-Z])?-\d+-\d+)\b/i);
+      if (invMatch && invMatch[1].toLowerCase() !== invoiceNo.toLowerCase()) {
+        rowInvoiceNo = invMatch[1].trim();
+      }
+
+      // Track index for uniqueness per invoice number
+      rowInvoiceCounts[rowInvoiceNo] = (rowInvoiceCounts[rowInvoiceNo] || 0) + 1;
+      const order_id = rowInvoiceNo !== invoiceNo
+        ? `${invoiceNo}-${rowInvoiceNo}-${rowInvoiceCounts[rowInvoiceNo]}`
+        : `${invoiceNo}-${index + 1}`;
+
       const absTaxable = Math.abs(taxableAmount);
       const absTax = Math.abs(taxAmount);
       const totalCost = absTaxable + absTax;
       
       orders.push({
-        order_id: `${invoiceNo}-${index + 1}`,
+        order_id,
         order_date: parseDate(date),
         marketplace: 'amazon',
         product_name: description || 'EasyShip Weight Handling Fee',
@@ -672,8 +686,19 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
     const absTax = Math.abs(taxAmount);
     const totalCost = absTaxable + absTax;
     
+    // Extract original invoice number if mentioned in the block (different from invoiceNo)
+    let rowInvoiceNo = invoiceNo;
+    const invMatch = itemText.match(/\b([A-Z]+(?:-[A-Z])?-\d+-\d+)\b/i);
+    if (invMatch && invMatch[1].toLowerCase() !== invoiceNo.toLowerCase()) {
+      rowInvoiceNo = invMatch[1].trim();
+    }
+
+    const order_id = rowInvoiceNo !== invoiceNo
+      ? `${invoiceNo}-${rowInvoiceNo}`
+      : (summaryMatches.length > 1 ? `${invoiceNo}-${i + 1}` : invoiceNo);
+
     orders.push({
-      order_id: summaryMatches.length > 1 ? `${invoiceNo}-${i + 1}` : invoiceNo,
+      order_id,
       order_date: fallbackDate || new Date().toISOString().split('T')[0],
       marketplace: 'amazon',
       product_name: description || 'Amazon Marketplace Service Fee',
