@@ -569,7 +569,7 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
     const totalCost = absTaxable + absTax;
     
     orders.push({
-      order_id: invoiceNo,
+      order_id: matches.length > 1 ? `${invoiceNo}-${i + 1}` : invoiceNo,
       order_date: invoiceDate,
       marketplace: 'amazon',
       product_name: description || 'Amazon Marketplace Service Fee',
