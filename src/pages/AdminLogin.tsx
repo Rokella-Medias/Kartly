@@ -5,9 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Loader2, Shield, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Shield, ShieldAlert, ArrowLeft, Lock } from 'lucide-react';
 import kartlyLogo from '@/assets/kartly-logo.png';
 import { toast } from 'sonner';
 
@@ -17,12 +16,11 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { signIn, user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // If user is already authenticated, check role and redirect
     if (!authLoading && user) {
       checkAdminRoleAndRedirect(user.id);
     }
@@ -44,7 +42,6 @@ export default function AdminLogin() {
         toast.success('Admin login successful!');
         navigate('/admin');
       } else {
-        // Not an admin - sign out and show error
         setError('Access Denied: This account does not have administrator privileges.');
         await signOut();
       }
@@ -69,12 +66,11 @@ export default function AdminLogin() {
     }
 
     const { error: signInError } = await signIn(email, password);
-    
+
     if (signInError) {
       setError(signInError.message);
       setLoading(false);
     } else {
-      // The useEffect hook or subsequent call will check role
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (currentUser) {
         await checkAdminRoleAndRedirect(currentUser.id);
@@ -85,104 +81,257 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#0B0F19] text-slate-100 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-amber-600/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      <div className="w-full max-w-md space-y-6 z-10">
-        <div className="text-center space-y-2">
-          <Link to="/" className="inline-flex items-center gap-2 mb-2">
-            <img src={kartlyLogo} alt="Kartly" className="h-10 w-auto brightness-0 invert" />
-          </Link>
-          <div className="flex items-center justify-center gap-2 text-rose-500 font-semibold tracking-wider text-sm uppercase">
-            <Shield className="w-4 h-4" />
-            <span>Secure Administration Portal</span>
-          </div>
-        </div>
+    /* Force light mode regardless of global theme */
+    <div className="light" style={{ colorScheme: 'light' }}>
+      <div
+        className="min-h-screen flex items-center justify-center relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #f8faff 0%, #eef2ff 40%, #fdf4ff 100%)',
+          color: '#0f172a',
+        }}
+      >
+        {/* Decorative background blobs */}
+        <div
+          className="absolute top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)',
+            transform: 'translate(-30%, -30%)',
+          }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(244,63,94,0.07) 0%, transparent 70%)',
+            transform: 'translate(30%, 30%)',
+          }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 w-[300px] h-[300px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(168,85,247,0.05) 0%, transparent 70%)',
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
 
-        <Card className="bg-[#121826]/80 border-slate-800 shadow-2xl backdrop-blur-md">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-2xl font-display text-white flex items-center justify-center gap-2">
-              Admin Sign In
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Authorized personnel only. Access logs are monitored.
-            </CardDescription>
-          </CardHeader>
-          
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4 pt-4">
-              {error && (
-                <Alert variant="destructive" className="bg-red-950/50 border-red-900/50 text-red-200">
-                  <ShieldAlert className="h-4 w-4 text-red-400" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-slate-300">Admin Email</Label>
-                <Input
-                  id="email"
+        <div className="w-full max-w-md px-4 py-8 z-10 space-y-6">
+          {/* Logo + badge */}
+          <div className="text-center space-y-3">
+            <Link to="/" className="inline-flex items-center gap-2 mb-1">
+              <img src={kartlyLogo} alt="Kartly" className="h-10 w-auto" />
+            </Link>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase"
+              style={{ background: 'rgba(244,63,94,0.1)', color: '#be123c', border: '1px solid rgba(244,63,94,0.2)' }}>
+              <Shield className="w-3.5 h-3.5" />
+              Secure Administration Portal
+            </div>
+          </div>
+
+          {/* Card */}
+          <div
+            className="rounded-2xl p-8 space-y-6"
+            style={{
+              background: 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(99,102,241,0.12)',
+              boxShadow: '0 20px 60px rgba(99,102,241,0.12), 0 4px 16px rgba(0,0,0,0.06)',
+            }}
+          >
+            {/* Header */}
+            <div className="text-center space-y-1">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 8px 24px rgba(99,102,241,0.35)' }}
+              >
+                <Lock className="w-7 h-7 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold" style={{ color: '#0f172a', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>
+                Admin Sign In
+              </h1>
+              <p className="text-sm" style={{ color: '#64748b' }}>
+                Authorized personnel only. All access is monitored.
+              </p>
+            </div>
+
+            {/* Error alert */}
+            {error && (
+              <div
+                className="flex items-start gap-3 rounded-xl p-3.5 text-sm"
+                style={{ background: 'rgba(254,226,226,0.8)', border: '1px solid rgba(248,113,113,0.4)', color: '#b91c1c' }}
+              >
+                <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label htmlFor="admin-email" className="text-sm font-medium" style={{ color: '#374151' }}>
+                  Admin Email
+                </label>
+                <input
+                  id="admin-email"
                   type="email"
                   placeholder="admin@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading || authLoading}
                   required
-                  className="h-11 bg-[#1A2234] border-slate-700 text-slate-100 placeholder-slate-500 focus:border-rose-500 focus:ring-rose-500"
+                  autoComplete="email"
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    padding: '0 12px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #e2e8f0',
+                    background: 'rgba(255,255,255,0.9)',
+                    color: '#0f172a',
+                    fontSize: '14px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#6366f1';
+                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e2e8f0';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-slate-300">Password</Label>
-                </div>
+              <div className="space-y-1.5">
+                <label htmlFor="admin-password" className="text-sm font-medium" style={{ color: '#374151' }}>
+                  Password
+                </label>
                 <div className="relative">
-                  <Input
-                    id="password"
+                  <input
+                    id="admin-password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading || authLoading}
                     required
-                    className="h-11 bg-[#1A2234] border-slate-700 text-slate-100 placeholder-slate-500 focus:border-rose-500 focus:ring-rose-500 pr-10"
+                    autoComplete="current-password"
+                    style={{
+                      width: '100%',
+                      height: '44px',
+                      padding: '0 44px 0 12px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #e2e8f0',
+                      background: 'rgba(255,255,255,0.9)',
+                      color: '#0f172a',
+                      fontSize: '14px',
+                      outline: 'none',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = '#6366f1';
+                      e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.15)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = '#e2e8f0';
+                      e.target.style.boxShadow = 'none';
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
                     disabled={loading || authLoading}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#94a3b8',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              <Button
+              <button
                 type="submit"
-                className="w-full h-11 text-base bg-rose-600 hover:bg-rose-500 text-white font-medium shadow-lg hover:shadow-rose-600/20 transition-all duration-200 mt-6"
                 disabled={loading || authLoading}
+                style={{
+                  width: '100%',
+                  height: '46px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: loading || authLoading
+                    ? '#a5b4fc'
+                    : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                  color: '#ffffff',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: loading || authLoading ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  marginTop: '8px',
+                  boxShadow: loading || authLoading ? 'none' : '0 4px 20px rgba(99,102,241,0.4)',
+                  transition: 'opacity 0.2s, transform 0.1s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && !authLoading) {
+                    (e.target as HTMLButtonElement).style.opacity = '0.92';
+                    (e.target as HTMLButtonElement).style.transform = 'translateY(-1px)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLButtonElement).style.opacity = '1';
+                  (e.target as HTMLButtonElement).style.transform = 'translateY(0)';
+                }}
               >
-                {loading ? (
+                {loading || authLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Authenticating Admin...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Authenticating...
                   </>
                 ) : (
-                  'Sign In to Console'
+                  <>
+                    <Shield className="w-4 h-4" />
+                    Sign In to Admin Console
+                  </>
                 )}
-              </Button>
-            </CardContent>
-          </form>
-        </Card>
+              </button>
+            </form>
 
-        <div className="text-center">
-          <Link to="/login" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Regular User Login
-          </Link>
+            {/* Security notice */}
+            <div
+              className="flex items-center gap-2 text-xs rounded-lg p-3"
+              style={{ background: 'rgba(241,245,249,0.8)', color: '#64748b' }}
+            >
+              <Shield className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+              <span>This portal is restricted to authorized administrators. Unauthorized access attempts are logged and reported.</span>
+            </div>
+          </div>
+
+          {/* Back link */}
+          <div className="text-center">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 text-sm transition-colors"
+              style={{ color: '#64748b' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#6366f1')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Regular User Login
+            </Link>
+          </div>
         </div>
       </div>
     </div>
