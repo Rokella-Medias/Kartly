@@ -21,50 +21,74 @@ const columnMappings: Record<Marketplace, Record<string, string>> = {
   amazon: {
     'order-id': 'order_id',
     'amazon-order-id': 'order_id',
+    'order id': 'order_id',
     'purchase-date': 'order_date',
     'order date': 'order_date',
+    'date/time': 'order_date',
+    'date time': 'order_date',
+    'time': 'order_date', // Amazon Sales Dashboard
     'product-name': 'product_name',
     'product name': 'product_name',
     'item-name': 'product_name',
+    'description': 'product_name',
     'sku': 'sku',
     'quantity': 'quantity',
     'qty': 'quantity',
+    'selected date range (units ordered)': 'quantity', // Amazon Sales Dashboard
     'item-price': 'selling_price',
     'selling price': 'selling_price',
     'price': 'selling_price',
+    'product sales': 'selling_price',
+    'product sale': 'selling_price',
+    'selected date range (ordered product sales)': 'selling_price', // Amazon Sales Dashboard
     'commission': 'marketplace_commission',
     'amazon fee': 'marketplace_commission',
     'fba fees': 'marketplace_commission',
+    'selling fees': 'marketplace_commission',
     'shipping': 'shipping_charges',
     'shipping-price': 'shipping_charges',
+    'shipping charges': 'shipping_charges',
+    'other transaction fees': 'shipping_charges',
     'tax': 'tax',
+    'total sales tax liable': 'tax',
     'total': 'total_amount',
     'item-total': 'total_amount',
+    'selected date range (ordered product sales) total': 'total_amount', // Amazon Sales Dashboard
     'settlement amount': 'net_settlement_amount',
     'your earnings': 'net_settlement_amount',
     'status': 'order_status',
     'order-status': 'order_status',
+    'transaction status': 'order_status',
+    // GST invoice keys
+    'invoice number': 'order_id',
+    'invoice date': 'order_date',
+    'invoice value': 'total_amount',
+    'taxable value': 'selling_price',
   },
   flipkart: {
     'order id': 'order_id',
     'order_id': 'order_id',
-    'orderId': 'order_id',
+    'orderid': 'order_id',
     'order date': 'order_date',
     'order_date': 'order_date',
-    'orderDate': 'order_date',
+    'orderdate': 'order_date',
     'product': 'product_name',
     'product name': 'product_name',
     'product_title': 'product_name',
     'fsn': 'sku',
     'sku': 'sku',
     'seller sku': 'sku',
+    'sku name': 'sku',
     'quantity': 'quantity',
     'qty': 'quantity',
+    'gross units': 'quantity',
     'selling price': 'selling_price',
     'final invoice amount': 'selling_price',
+    'final selling price': 'selling_price',
     'marketplace fee': 'marketplace_commission',
     'commission': 'marketplace_commission',
     'flipkart fee': 'marketplace_commission',
+    'total expenses': 'marketplace_commission',
     'shipping fee': 'shipping_charges',
     'logistics': 'shipping_charges',
     'tax': 'tax',
@@ -73,36 +97,61 @@ const columnMappings: Record<Marketplace, Record<string, string>> = {
     'invoice amount': 'total_amount',
     'settlement': 'net_settlement_amount',
     'settlement value': 'net_settlement_amount',
+    'bank settlement': 'net_settlement_amount',
     'status': 'order_status',
     'order status': 'order_status',
+    // GST invoice keys
+    'invoice number': 'order_id',
+    'invoice date': 'order_date',
+    'invoice value': 'total_amount',
+    'taxable value': 'selling_price',
   },
   meesho: {
     'order id': 'order_id',
     'sub order no': 'order_id',
     'sub order number': 'order_id',
+    'sub_order_num': 'order_id',
+    'sub order num': 'order_id',
     'order date': 'order_date',
     'ordered on': 'order_date',
+    'order_date': 'order_date',
     'product name': 'product_name',
     'product': 'product_name',
     'sku': 'sku',
     'supplier sku': 'sku',
+    'supplier_sku': 'sku',
     'quantity': 'quantity',
     'qty': 'quantity',
     'selling price': 'selling_price',
     'product price': 'selling_price',
+    'total_taxable_sale_value': 'selling_price',
+    'total taxable sale value': 'selling_price',
     'commission': 'marketplace_commission',
     'meesho commission': 'marketplace_commission',
     'shipping': 'shipping_charges',
     'shipping charge': 'shipping_charges',
+    'taxable_shipping': 'shipping_charges',
+    'taxable shipping': 'shipping_charges',
     'tax': 'tax',
     'gst': 'tax',
+    'tax_amount': 'tax',
+    'tax amount': 'tax',
     'total': 'total_amount',
     'order value': 'total_amount',
+    'total_invoice_value': 'total_amount',
+    'total invoice value': 'total_amount',
     'settlement': 'net_settlement_amount',
     'your earning': 'net_settlement_amount',
     'payout': 'net_settlement_amount',
     'status': 'order_status',
     'order status': 'order_status',
+    'cancel_return_date': 'order_status',
+    'cancel return date': 'order_status',
+    // GST invoice keys
+    'invoice number': 'order_id',
+    'invoice date': 'order_date',
+    'invoice value': 'total_amount',
+    'taxable value': 'selling_price',
   },
 };
 
@@ -112,7 +161,7 @@ function normalizeColumnName(column: string): string {
 
 function parseDate(dateStr: string): string {
   if (!dateStr) return new Date().toISOString().split('T')[0];
-
+  
   // Try various date formats
   const formats = [
     /(\d{4})-(\d{2})-(\d{2})/, // YYYY-MM-DD
@@ -148,46 +197,73 @@ function parseDate(dateStr: string): string {
 function parseNumber(value: string | number | undefined): number {
   if (value === undefined || value === null || value === '') return 0;
   if (typeof value === 'number') return value;
-
+  
   // Remove currency symbols and commas
   const cleaned = value.toString().replace(/[₹$,\s]/g, '').trim();
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
 }
 
-function parseStatus(status: string | undefined): OrderStatus {
+function parseStatus(status: string | undefined, fieldName?: string): OrderStatus {
   if (!status) return 'pending';
-
+  
   const normalized = status.toLowerCase().trim();
-
+  
+  // If the field name represents a cancel or return date, and it has a date value, it is returned/cancelled
+  if (fieldName && (fieldName.includes('cancel_return_date') || fieldName.includes('cancel return date') || fieldName.includes('cancel_return') || fieldName.includes('cancel return')) && status) {
+    return 'returned';
+  }
+  
   if (normalized.includes('deliver')) return 'delivered';
   if (normalized.includes('ship')) return 'shipped';
   if (normalized.includes('cancel')) return 'cancelled';
   if (normalized.includes('return')) return 'returned';
   if (normalized.includes('pend') || normalized.includes('process')) return 'pending';
-
+  
   return 'pending';
 }
 
-export function detectMarketplace(headers: string[]): Marketplace | null {
-  const normalizedHeaders = headers.map(normalizeColumnName);
-
-  // Amazon-specific columns
-  if (normalizedHeaders.some(h => h.includes('amazon') || h.includes('fba') || h.includes('asin'))) {
-    return 'amazon';
+export function detectMarketplace(lines: string[]): Marketplace | null {
+  // Scan first 20 lines to find marketplace-specific keywords
+  const maxScan = Math.min(20, lines.length);
+  for (let i = 0; i < maxScan; i++) {
+    const normalized = normalizeColumnName(lines[i]);
+    if (normalized.includes('amazon') || normalized.includes('fba') || normalized.includes('asin') || normalized.includes('sales dashboard')) {
+      return 'amazon';
+    }
+    if (normalized.includes('flipkart') || normalized.includes('fsn') || normalized.includes('ekart')) {
+      return 'flipkart';
+    }
+    if (normalized.includes('meesho') || normalized.includes('sub order') || normalized.includes('supplier sku') || normalized.includes('sub_order_num') || normalized.includes('sub order num')) {
+      return 'meesho';
+    }
   }
-
-  // Flipkart-specific columns
-  if (normalizedHeaders.some(h => h.includes('flipkart') || h.includes('fsn') || h.includes('ekart'))) {
-    return 'flipkart';
-  }
-
-  // Meesho-specific columns
-  if (normalizedHeaders.some(h => h.includes('meesho') || h.includes('sub order') || h.includes('supplier sku'))) {
-    return 'meesho';
-  }
-
   return null;
+}
+
+export function findHeaderRowIndex(lines: string[], marketplace: Marketplace): number {
+  const mapping = columnMappings[marketplace];
+  const mappingKeys = Object.keys(mapping);
+  
+  const maxScan = Math.min(30, lines.length);
+  for (let i = 0; i < maxScan; i++) {
+    const cells = parseCSVLine(lines[i]).map(normalizeColumnName);
+    
+    let matchCount = 0;
+    for (const cell of cells) {
+      if (!cell) continue;
+      const matched = mappingKeys.some(key => cell === key || cell.includes(key));
+      if (matched) {
+        matchCount++;
+      }
+    }
+    
+    if (matchCount >= 3) {
+      return i;
+    }
+  }
+  
+  return 0;
 }
 
 export function parseCSV(csvText: string, marketplace: Marketplace): { orders: ParsedOrder[]; errors: string[] } {
@@ -196,18 +272,31 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
     return { orders: [], errors: ['CSV file is empty or has no data rows'] };
   }
 
+  const headerIndex = findHeaderRowIndex(lines, marketplace);
+  if (headerIndex >= lines.length) {
+    return { orders: [], errors: ['Failed to find header row in CSV file'] };
+  }
+
   // Parse headers
-  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+  const headers = parseCSVLine(lines[headerIndex]);
   const normalizedHeaders = headers.map(normalizeColumnName);
   const mapping = columnMappings[marketplace];
 
   // Create column index map
   const columnMap: Record<string, number> = {};
   normalizedHeaders.forEach((header, index) => {
+    // 1. First look for exact match
     for (const [key, value] of Object.entries(mapping)) {
-      if (header.includes(key) || key.includes(header)) {
+      if (header === key) {
         columnMap[value] = index;
-        break;
+        return;
+      }
+    }
+    // 2. Fallback to substring match
+    for (const [key, value] of Object.entries(mapping)) {
+      if (header.includes(key)) {
+        columnMap[value] = index;
+        return;
       }
     }
   });
@@ -215,11 +304,11 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
   const orders: ParsedOrder[] = [];
   const errors: string[] = [];
 
-  // Parse data rows
-  for (let i = 1; i < lines.length; i++) {
+  // Parse data rows starting after header row
+  for (let i = headerIndex + 1; i < lines.length; i++) {
     try {
       const values = parseCSVLine(lines[i]);
-
+      
       // Skip empty rows
       if (values.every(v => !v.trim())) continue;
 
@@ -228,37 +317,51 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
         return index !== undefined ? values[index]?.replace(/"/g, '').trim() || '' : '';
       };
 
-      const order_id = getValue('order_id');
+      const getHeaderName = (field: string): string => {
+        const index = columnMap[field];
+        return index !== undefined ? normalizedHeaders[index] : '';
+      };
+
+      const order_date_raw = getValue('order_date');
+      const order_date = parseDate(order_date_raw);
+      
+      // If we don't have an order ID, generate a deterministic one for summaries
+      let order_id = getValue('order_id');
+      if (!order_id && order_date_raw) {
+        order_id = `${marketplace.toUpperCase()}-SUMMARY-${order_date}`;
+      }
+
       const product_name = getValue('product_name');
+      const sku = getValue('sku');
 
       // Skip rows without essential data
-      if (!order_id && !product_name) {
+      if (!order_id && !product_name && !sku) {
         continue;
       }
 
       const order: ParsedOrder = {
         order_id: order_id || `${marketplace.toUpperCase()}-${Date.now()}-${i}`,
-        order_date: parseDate(getValue('order_date')),
+        order_date,
         marketplace,
-        product_name: product_name || 'Unknown Product',
-        sku: getValue('sku') || null,
+        product_name: product_name || sku || (order_id.includes('SUMMARY') ? 'Daily Sales Summary' : 'Unknown Product'),
+        sku: sku || null,
         quantity: Math.max(1, Math.round(parseNumber(getValue('quantity')))),
         selling_price: parseNumber(getValue('selling_price')),
-        marketplace_commission: parseNumber(getValue('marketplace_commission')),
-        shipping_charges: parseNumber(getValue('shipping_charges')),
-        tax: parseNumber(getValue('tax')),
+        marketplace_commission: Math.abs(parseNumber(getValue('marketplace_commission'))),
+        shipping_charges: Math.abs(parseNumber(getValue('shipping_charges'))),
+        tax: Math.abs(parseNumber(getValue('tax'))),
         total_amount: parseNumber(getValue('total_amount')),
         net_settlement_amount: parseNumber(getValue('net_settlement_amount')),
-        order_status: parseStatus(getValue('order_status')),
+        order_status: parseStatus(getValue('order_status'), getHeaderName('order_status')),
       };
 
-      // Calculate total if not provided
-      if (order.total_amount === 0 && order.selling_price > 0) {
+      // Calculate total if not provided or 0
+      if (order.total_amount === 0 && order.selling_price !== 0) {
         order.total_amount = order.selling_price * order.quantity;
       }
 
-      // Calculate net settlement if not provided
-      if (order.net_settlement_amount === 0 && order.total_amount > 0) {
+      // Calculate net settlement if not provided or 0
+      if (order.net_settlement_amount === 0 && order.total_amount !== 0) {
         order.net_settlement_amount = order.total_amount - order.marketplace_commission - order.shipping_charges;
       }
 
@@ -279,7 +382,7 @@ function parseCSVLine(line: string): string[] {
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-
+    
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
@@ -289,7 +392,7 @@ function parseCSVLine(line: string): string[] {
       current += char;
     }
   }
-
+  
   result.push(current);
   return result;
 }
