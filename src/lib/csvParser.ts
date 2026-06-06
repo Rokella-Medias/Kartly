@@ -112,7 +112,7 @@ function normalizeColumnName(column: string): string {
 
 function parseDate(dateStr: string): string {
   if (!dateStr) return new Date().toISOString().split('T')[0];
-  
+
   // Try various date formats
   const formats = [
     /(\d{4})-(\d{2})-(\d{2})/, // YYYY-MM-DD
@@ -148,7 +148,7 @@ function parseDate(dateStr: string): string {
 function parseNumber(value: string | number | undefined): number {
   if (value === undefined || value === null || value === '') return 0;
   if (typeof value === 'number') return value;
-  
+
   // Remove currency symbols and commas
   const cleaned = value.toString().replace(/[₹$,\s]/g, '').trim();
   const num = parseFloat(cleaned);
@@ -157,36 +157,36 @@ function parseNumber(value: string | number | undefined): number {
 
 function parseStatus(status: string | undefined): OrderStatus {
   if (!status) return 'pending';
-  
+
   const normalized = status.toLowerCase().trim();
-  
+
   if (normalized.includes('deliver')) return 'delivered';
   if (normalized.includes('ship')) return 'shipped';
   if (normalized.includes('cancel')) return 'cancelled';
   if (normalized.includes('return')) return 'returned';
   if (normalized.includes('pend') || normalized.includes('process')) return 'pending';
-  
+
   return 'pending';
 }
 
 export function detectMarketplace(headers: string[]): Marketplace | null {
   const normalizedHeaders = headers.map(normalizeColumnName);
-  
+
   // Amazon-specific columns
   if (normalizedHeaders.some(h => h.includes('amazon') || h.includes('fba') || h.includes('asin'))) {
     return 'amazon';
   }
-  
+
   // Flipkart-specific columns
   if (normalizedHeaders.some(h => h.includes('flipkart') || h.includes('fsn') || h.includes('ekart'))) {
     return 'flipkart';
   }
-  
+
   // Meesho-specific columns
   if (normalizedHeaders.some(h => h.includes('meesho') || h.includes('sub order') || h.includes('supplier sku'))) {
     return 'meesho';
   }
-  
+
   return null;
 }
 
@@ -219,7 +219,7 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
   for (let i = 1; i < lines.length; i++) {
     try {
       const values = parseCSVLine(lines[i]);
-      
+
       // Skip empty rows
       if (values.every(v => !v.trim())) continue;
 
@@ -279,7 +279,7 @@ function parseCSVLine(line: string): string[] {
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    
+
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
@@ -289,7 +289,7 @@ function parseCSVLine(line: string): string[] {
       current += char;
     }
   }
-  
+
   result.push(current);
   return result;
 }

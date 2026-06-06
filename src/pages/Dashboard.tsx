@@ -49,15 +49,34 @@ export default function Dashboard() {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('order_date', { ascending: false });
+      let allOrders: Order[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      let keepFetching = true;
 
-      if (error) throw error;
+      while (keepFetching && page < 50) {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('order_date', { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allOrders = [...allOrders, ...(data as unknown as Order[])];
+          if (data.length < pageSize) {
+            keepFetching = false;
+          } else {
+            page++;
+          }
+        } else {
+          keepFetching = false;
+        }
+      }
       
-      setOrders((data as unknown as Order[]) || []);
+      setOrders(allOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {

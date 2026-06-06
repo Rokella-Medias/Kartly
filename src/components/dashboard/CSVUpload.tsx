@@ -33,8 +33,18 @@ async function excelToCSV(file: File): Promise<string> {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const csv = XLSX.utils.sheet_to_csv(firstSheet);
+        
+        // Find sheet name containing "order", "sale", "tcs", or "invoice", case-insensitive
+        let targetSheetName = workbook.SheetNames[0];
+        const orderSheet = workbook.SheetNames.find(name => 
+          /order|sale|tcs|invoice|transaction/i.test(name)
+        );
+        if (orderSheet) {
+          targetSheetName = orderSheet;
+        }
+        
+        const sheet = workbook.Sheets[targetSheetName];
+        const csv = XLSX.utils.sheet_to_csv(sheet);
         resolve(csv);
       } catch (err) {
         reject(new Error('Failed to parse Excel file'));
@@ -78,10 +88,9 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
         }
         
         // Try to auto-detect marketplace from headers
-        const lines = csvText.split('\n');
+        const lines = csvText.split('\n').filter(line => line.trim());
         if (lines.length > 0) {
-          const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-          const detected = detectMarketplace(headers);
+          const detected = detectMarketplace(lines);
           if (detected) {
             setMarketplace(detected);
           }
@@ -229,7 +238,7 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
           <span className="hidden sm:inline">Upload CSV</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5" />
@@ -293,16 +302,17 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
           )}
 
           {status === 'selecting' && file && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-                <FileSpreadsheet className="w-8 h-8 text-accent" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{file.name}</p>
+            <div className="space-y-4 w-full overflow-hidden">
+              {/* File info row — overflow-hidden + min-w-0 chain ensures long filenames truncate */}
+              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg overflow-hidden">
+                <FileSpreadsheet className="w-8 h-8 shrink-0 text-accent" />
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="font-medium text-foreground truncate w-full" title={file.name}>{file.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {(file.size / 1024).toFixed(1)} KB
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={reset}>
+                <Button variant="ghost" size="icon" className="shrink-0" onClick={reset}>
                   <X className="w-4 h-4" />
                 </Button>
               </div>
@@ -312,10 +322,10 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
                   Select Marketplace
                 </label>
                 <Select value={marketplace} onValueChange={(v) => setMarketplace(v as Marketplace)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose marketplace" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-full">
                     <SelectItem value="amazon">
                       <span className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-amazon" />
