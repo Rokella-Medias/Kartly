@@ -249,7 +249,7 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 w-full min-w-0">
           {status === 'idle' && (
             <>
               <div
@@ -302,9 +302,9 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
           )}
 
           {status === 'selecting' && file && (
-            <div className="space-y-4 w-full overflow-hidden">
+            <div className="space-y-4 w-full min-w-0 overflow-hidden">
               {/* File info row — overflow-hidden + min-w-0 chain ensures long filenames truncate */}
-              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg overflow-hidden">
+              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg overflow-hidden w-full min-w-0">
                 <FileSpreadsheet className="w-8 h-8 shrink-0 text-accent" />
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <p className="font-medium text-foreground truncate w-full" title={file.name}>{file.name}</p>
