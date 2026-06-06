@@ -496,6 +496,9 @@ export function generateSampleCSV(marketplace: Marketplace): string {
 }
 
 export function parseAmazonPDFText(text: string): ParsedOrder[] {
+  const isCreditNote = text.toLowerCase().includes('credit note');
+  const orders: ParsedOrder[] = [];
+  
   // Extract Invoice/Credit Note number
   let invoiceNo = '';
   const invNoMatch = text.match(/(?:Invoice|Credit Note) Number:\s*([\w-]+)/i);
@@ -503,36 +506,129 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
     invoiceNo = invNoMatch[1].trim();
   }
   
-  // Extract Invoice/Credit Note date
-  let invoiceDate = '';
+  // Extract main Invoice/Credit Note date (as fallback)
+  let fallbackDate = '';
   const invDateMatch = text.match(/(?:Invoice|Credit Note) Date:\s*([\d/|-]+)/i);
   if (invDateMatch) {
-    invoiceDate = parseDate(invDateMatch[1].trim());
+    fallbackDate = parseDate(invDateMatch[1].trim());
   }
-  
-  const isCreditNote = text.toLowerCase().includes('credit note');
-  const orders: ParsedOrder[] = [];
-  
-  // Replace newlines with spaces to handle multi-line wraps in items
-  const cleanText = text.replace(/\s+/g, ' ');
-  
-  // Find all item indices
-  const itemRegex = /\b(\d+)\.\s+(?=\b99\d{4}\b|\b[A-Z0-9-]+\b\s+[\d-]+\b\s+\b99\d{4}\b)/g;
-  const matches: { index: number; number: string }[] = [];
+
+  // 1. Try to find detailed daily transaction rows by searching for date tokens (DD/MM/YYYY)
+  const detailsOfFeesIdx = text.toLowerCase().indexOf('details of fees');
+  const detailsText = detailsOfFeesIdx !== -1 ? text.substring(detailsOfFeesIdx) : '';
+
+  const dateRegex = /\b(\d{2}\/\d{2}\/\d{4})\b/g;
+  const matches: { date: string; index: number }[] = [];
   let match;
-  while ((match = itemRegex.exec(cleanText)) !== null) {
+  while ((match = dateRegex.exec(detailsText)) !== null) {
     matches.push({
-      index: match.index,
-      number: match[1]
+      date: match[1],
+      index: match.index
     });
   }
-  
+
+  const detailedRows: { text: string; date: string; hsn: string }[] = [];
   for (let i = 0; i < matches.length; i++) {
     const startIdx = matches[i].index;
-    const endIdx = (i + 1 < matches.length) ? matches[i + 1].index : cleanText.indexOf('Total:', startIdx);
+    let endIdx = (i + 1 < matches.length) ? matches[i + 1].index : detailsText.length;
+    
+    // Check if there is "Total" or "Subtotal" or similar keywords signaling the end of the details section
+    const subText = detailsText.substring(startIdx, endIdx);
+    const totalMatch = subText.match(/\b(total|subtotal|to view your account|regd office|satellite office)\b/i);
+    if (totalMatch) {
+      endIdx = startIdx + totalMatch.index;
+    }
+    
+    const blockText = detailsText.substring(startIdx, endIdx).trim();
+    
+    // Check if block contains HSN code (typically 99\d{4})
+    const hsnMatch = blockText.match(/\b(99\d{4})\b/);
+    if (hsnMatch) {
+      detailedRows.push({
+        text: blockText,
+        date: matches[i].date,
+        hsn: hsnMatch[1]
+      });
+    }
+  }
+
+  if (detailedRows.length > 0) {
+    detailedRows.forEach((rowInfo, index) => {
+      const { text: blockText, date, hsn } = rowInfo;
+      const hsnIdx = blockText.indexOf(hsn);
+      const afterHsn = blockText.substring(hsnIdx + hsn.length).trim();
+      
+      // Extract amounts
+      const inrRegex = /(-?\s*INR\s*-?|INR\s*-?)\s*([\d,]+\.\d{2})/gi;
+      const amounts: number[] = [];
+      let inrMatch;
+      while ((inrMatch = inrRegex.exec(blockText)) !== null) {
+        const valStr = inrMatch[2].replace(/,/g, '');
+        let val = parseFloat(valStr);
+        if (inrMatch[1].includes('-') || blockText.includes(`-${inrMatch[0]}`) || blockText.includes(`- ${inrMatch[0]}`)) {
+          val = -val;
+        }
+        amounts.push(val);
+      }
+      
+      let taxableAmount = 0;
+      let taxAmount = 0;
+      if (amounts.length >= 1) {
+        taxableAmount = amounts[0];
+      }
+      if (amounts.length >= 2) {
+        taxAmount = amounts.slice(1).reduce((sum, val) => sum + val, 0);
+      }
+      
+      // Extract description
+      let description = '';
+      const inrIndex = afterHsn.search(/-?\s*INR/i);
+      if (inrIndex !== -1) {
+        description = afterHsn.substring(0, inrIndex).trim();
+      } else {
+        description = afterHsn;
+      }
+      description = description.replace(/\s+/g, ' ').trim();
+      description = description.replace(/^\s*-\s*/, '').trim();
+      
+      const absTaxable = Math.abs(taxableAmount);
+      const absTax = Math.abs(taxAmount);
+      const totalCost = absTaxable + absTax;
+      
+      orders.push({
+        order_id: `${invoiceNo}-${index + 1}`,
+        order_date: parseDate(date),
+        marketplace: 'amazon',
+        product_name: description || 'EasyShip Weight Handling Fee',
+        sku: hsn || null,
+        quantity: 1,
+        selling_price: 0,
+        marketplace_commission: absTaxable,
+        shipping_charges: 0,
+        tax: absTax,
+        total_amount: 0,
+        net_settlement_amount: isCreditNote ? totalCost : -totalCost,
+        order_status: 'delivered'
+      });
+    });
+    
+    return orders;
+  }
+
+  // 2. Fallback to parsing summary page items
+  const cleanText = text.replace(/\s+/g, ' ');
+  const itemRegex = /\b(\d+)\.\s+(?=\b99\d{4}\b|\b[A-Z0-9-]+\b\s+[\d-]+\b\s+\b99\d{4}\b)/g;
+  const summaryMatches: { index: number; number: string }[] = [];
+  let summaryMatch;
+  while ((summaryMatch = itemRegex.exec(cleanText)) !== null) {
+    summaryMatches.push({ index: summaryMatch.index, number: summaryMatch[1] });
+  }
+  
+  for (let i = 0; i < summaryMatches.length; i++) {
+    const startIdx = summaryMatches[i].index;
+    const endIdx = (i + 1 < summaryMatches.length) ? summaryMatches[i + 1].index : cleanText.indexOf('Total:', startIdx);
     const itemText = cleanText.substring(startIdx, endIdx !== -1 ? endIdx : cleanText.length).trim();
     
-    // Look for HSN/SAC (usually 6 digits starting with 99)
     const hsnMatch = itemText.match(/\b(99\d{4})\b/);
     if (!hsnMatch) continue;
     const hsn = hsnMatch[1];
@@ -544,7 +640,6 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
     let taxableAmount = 0;
     let taxAmount = 0;
     
-    // Regex to match INR values in the item block
     const inrRegex = /(-?\s*INR\s*-?|INR\s*-?)\s*([\d,]+\.\d{2})/gi;
     const amounts: number[] = [];
     let inrMatch;
@@ -564,14 +659,13 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
       taxAmount = amounts.slice(1).reduce((sum, val) => sum + val, 0);
     }
     
-    // Extract description (everything after HSN up to first INR)
     const inrIndex = afterHsn.search(/-?\s*INR/i);
     if (inrIndex !== -1) {
       description = afterHsn.substring(0, inrIndex).trim();
     } else {
       description = afterHsn;
     }
-    
+    description = description.replace(/\s+/g, ' ').trim();
     description = description.replace(/^\s*-\s*/, '').trim();
     
     const absTaxable = Math.abs(taxableAmount);
@@ -579,8 +673,8 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
     const totalCost = absTaxable + absTax;
     
     orders.push({
-      order_id: i > 0 ? `${invoiceNo}-${i}` : invoiceNo,
-      order_date: invoiceDate,
+      order_id: summaryMatches.length > 1 ? `${invoiceNo}-${i + 1}` : invoiceNo,
+      order_date: fallbackDate || new Date().toISOString().split('T')[0],
       marketplace: 'amazon',
       product_name: description || 'Amazon Marketplace Service Fee',
       sku: hsn || null,
