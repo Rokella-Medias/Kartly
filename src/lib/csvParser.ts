@@ -224,17 +224,41 @@ function parseStatus(status: string | undefined, fieldName?: string): OrderStatu
 }
 
 export function detectMarketplace(lines: string[]): Marketplace | null {
-  // Scan first 20 lines to find marketplace-specific keywords
+  // Scan first 20 lines to find marketplace-specific keywords or operator GSTINs
   const maxScan = Math.min(20, lines.length);
   for (let i = 0; i < maxScan; i++) {
     const normalized = normalizeColumnName(lines[i]);
-    if (normalized.includes('amazon') || normalized.includes('fba') || normalized.includes('asin') || normalized.includes('sales dashboard')) {
+    
+    // Check for Amazon keywords or Rajasthani/National GSTIN PAN 'AAICA3918J'
+    if (
+      normalized.includes('amazon') || 
+      normalized.includes('fba') || 
+      normalized.includes('asin') || 
+      normalized.includes('sales dashboard') ||
+      normalized.includes('aaica3918j')
+    ) {
       return 'amazon';
     }
-    if (normalized.includes('flipkart') || normalized.includes('fsn') || normalized.includes('ekart')) {
+    
+    // Check for Flipkart keywords or GSTIN PAN 'AABCF4837J'
+    if (
+      normalized.includes('flipkart') || 
+      normalized.includes('fsn') || 
+      normalized.includes('ekart') ||
+      normalized.includes('aabcf4837j')
+    ) {
       return 'flipkart';
     }
-    if (normalized.includes('meesho') || normalized.includes('sub order') || normalized.includes('supplier sku') || normalized.includes('sub_order_num') || normalized.includes('sub order num')) {
+    
+    // Check for Meesho keywords or GSTIN PAN 'AAHCM9332R'
+    if (
+      normalized.includes('meesho') || 
+      normalized.includes('sub order') || 
+      normalized.includes('supplier sku') || 
+      normalized.includes('sub_order_num') || 
+      normalized.includes('sub order num') ||
+      normalized.includes('aahcm9332r')
+    ) {
       return 'meesho';
     }
   }
