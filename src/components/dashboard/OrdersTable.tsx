@@ -12,7 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -35,11 +42,10 @@ const statusStyles: Record<OrderStatus, string> = {
   returned: 'bg-muted text-muted-foreground',
 };
 
-const ITEMS_PER_PAGE = 10;
-
 export function OrdersTable({ orders, loading }: OrdersTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const filteredOrders = orders.filter((order) => {
     const search = searchTerm.toLowerCase();
@@ -50,12 +56,55 @@ export function OrdersTable({ orders, loading }: OrdersTableProps) {
     );
   });
 
-  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
   const formatCurrency = (amount: number) => {
     return `₹${Number(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Always include page 1
+      pages.push(1);
+      
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      
+      if (start > 2) {
+        pages.push('... ');
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (end < totalPages - 1) {
+        pages.push(' ...');
+      }
+      
+      // Always include last page
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(totalPages, page)));
+  };
+
+  const handleItemsPerPageChange = (val: string) => {
+    setItemsPerPage(Number(val));
+    setCurrentPage(1);
   };
 
   return (
@@ -104,7 +153,7 @@ export function OrdersTable({ orders, loading }: OrdersTableProps) {
                 </TableRow>
               ) : (
                 paginatedOrders.map((order) => (
-                    <TableRow key={order.id} className="hover:bg-muted/30">
+                  <TableRow key={order.id} className="hover:bg-muted/30">
                     <TableCell className="font-mono text-xs sm:text-sm whitespace-nowrap">{order.order_id}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(order.order_date), 'MMM dd, yyyy')}
@@ -140,29 +189,98 @@ export function OrdersTable({ orders, loading }: OrdersTableProps) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-border px-4 sm:px-0">
-            <p className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(startIndex + ITEMS_PER_PAGE, filteredOrders.length)} of {filteredOrders.length} orders
-            </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-border px-4 sm:px-0">
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-muted-foreground whitespace-nowrap">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredOrders.length)} of {filteredOrders.length} orders
+              </p>
+              
+              <div className="flex items-center gap-1.5 ml-2">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">Show:</span>
+                <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                  <SelectTrigger className="h-8 w-[70px] px-2 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2">
+              {/* First Page */}
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="w-4 h-4" />
+              </Button>
+
+              {/* Prev Page */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-sm font-medium px-2">
-                Page {currentPage} of {totalPages}
-              </span>
+
+              {/* Page Number Buttons */}
+              <div className="flex items-center gap-1">
+                {getPageNumbers().map((page, index) => {
+                  if (typeof page === 'string') {
+                    return (
+                      <span key={index} className="px-2 text-muted-foreground text-sm font-medium">
+                        {page}
+                      </span>
+                    );
+                  }
+                  return (
+                    <Button
+                      key={index}
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      size="sm"
+                      className={cn(
+                        "h-8 w-8 p-0 text-xs",
+                        currentPage === page ? "gradient-primary text-primary-foreground font-semibold" : ""
+                      )}
+                      onClick={() => handlePageChange(page)}
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {/* Next Page */}
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
                 <ChevronRight className="w-4 h-4" />
+              </Button>
+
+              {/* Last Page */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="w-4 h-4" />
               </Button>
             </div>
           </div>
