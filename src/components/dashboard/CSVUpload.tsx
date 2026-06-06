@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Marketplace } from '@/types/orders';
-import { parseCSV, detectMarketplace, generateSampleCSV } from '@/lib/csvParser';
+import { parseCSV, detectMarketplace, generateSampleCSV, parseAmazonPDFText } from '@/lib/csvParser';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -64,6 +64,7 @@ type UploadStatus = 'idle' | 'selecting' | 'uploading' | 'success' | 'error';
 export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [fileText, setFileText] = useState<string>('');
   const [marketplace, setMarketplace] = useState<Marketplace | ''>('');
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [progress, setProgress] = useState(0);
@@ -78,17 +79,23 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
       setStatus('selecting');
       
       try {
-        let csvText: string;
-        const isExcel = uploadedFile.name.endsWith('.xlsx') || uploadedFile.name.endsWith('.xls');
+        let text = '';
+        const name = uploadedFile.name.toLowerCase();
+        const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
+        const isPDF = name.endsWith('.pdf');
         
         if (isExcel) {
-          csvText = await excelToCSV(uploadedFile);
+          text = await excelToCSV(uploadedFile);
+        } else if (isPDF) {
+          text = await extractTextFromPDF(uploadedFile);
         } else {
-          csvText = await uploadedFile.text();
+          text = await uploadedFile.text();
         }
         
+        setFileText(text);
+        
         // Try to auto-detect marketplace from headers
-        const lines = csvText.split('\n').filter(line => line.trim());
+        const lines = text.split('\n').filter(line => line.trim());
         if (lines.length > 0) {
           const detected = detectMarketplace(lines);
           if (detected) {
@@ -107,6 +114,7 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
       'text/csv': ['.csv'],
       'application/vnd.ms-excel': ['.csv', '.xls'],
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/pdf': ['.pdf'],
     },
     maxFiles: 1,
     disabled: status === 'uploading',
@@ -119,22 +127,38 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
     setProgress(0);
 
     try {
-      let text: string;
-      const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
-      
-      if (isExcel) {
-        text = await excelToCSV(file);
-      } else {
-        text = await file.text();
+      let text = fileText;
+      if (!text) {
+        const name = file.name.toLowerCase();
+        const isExcel = name.endsWith('.xlsx') || name.endsWith('.xls');
+        const isPDF = name.endsWith('.pdf');
+        
+        if (isExcel) {
+          text = await excelToCSV(file);
+        } else if (isPDF) {
+          text = await extractTextFromPDF(file);
+        } else {
+          text = await file.text();
+        }
       }
       setProgress(20);
 
-      const { orders, errors } = parseCSV(text, marketplace);
+      let orders: any[] = [];
+      let parseErrors: string[] = [];
+
+      const name = file.name.toLowerCase();
+      if (name.endsWith('.pdf')) {
+        orders = parseAmazonPDFText(text);
+      } else {
+        const { orders: parsedOrders, errors } = parseCSV(text, marketplace);
+        orders = parsedOrders;
+        parseErrors = errors;
+      }
       setProgress(40);
 
       if (orders.length === 0) {
         setStatus('error');
-        setResult({ imported: 0, skipped: 0, errors: ['No valid orders found in the CSV file'] });
+        setResult({ imported: 0, skipped: 0, errors: ['No valid orders found in the file'] });
         return;
       }
 
@@ -190,7 +214,7 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
 
       setProgress(100);
       setStatus('success');
-      setResult({ imported, skipped, errors });
+      setResult({ imported, skipped, errors: parseErrors });
       onUploadComplete();
     } catch (err) {
       setStatus('error');
@@ -217,6 +241,7 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
 
   const reset = () => {
     setFile(null);
+    setFileText('');
     setMarketplace('');
     setStatus('idle');
     setProgress(0);
@@ -408,4 +433,45 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
       </DialogContent>
     </Dialog>
   );
+}
+
+async function extractTextFromPDF(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const win = window as any;
+    if (!win.pdfjsLib) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
+      script.onload = () => {
+        const pdfjsLib = win.pdfjsLib;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        readAndExtract(file, pdfjsLib, resolve, reject);
+      };
+      script.onerror = () => reject(new Error('Failed to load PDF.js library'));
+      document.body.appendChild(script);
+    } else {
+      readAndExtract(file, win.pdfjsLib, resolve, reject);
+    }
+  });
+}
+
+function readAndExtract(file: File, pdfjsLib: any, resolve: (text: string) => void, reject: (err: any) => void) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const typedarray = new Uint8Array(e.target?.result as ArrayBuffer);
+      const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      resolve(fullText);
+    } catch (err) {
+      reject(err);
+    }
+  };
+  reader.onerror = () => reject(new Error('Failed to read file'));
+  reader.readAsArrayBuffer(file);
 }

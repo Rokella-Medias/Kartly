@@ -484,3 +484,106 @@ export function generateSampleCSV(marketplace: Marketplace): string {
 
   return `${headers[marketplace]}\n${sampleData[marketplace]}`;
 }
+
+export function parseAmazonPDFText(text: string): ParsedOrder[] {
+  // Extract Invoice/Credit Note number
+  let invoiceNo = '';
+  const invNoMatch = text.match(/(?:Invoice|Credit Note) Number:\s*([\w-]+)/i);
+  if (invNoMatch) {
+    invoiceNo = invNoMatch[1].trim();
+  }
+  
+  // Extract Invoice/Credit Note date
+  let invoiceDate = '';
+  const invDateMatch = text.match(/(?:Invoice|Credit Note) Date:\s*([\d/|-]+)/i);
+  if (invDateMatch) {
+    invoiceDate = parseDate(invDateMatch[1].trim());
+  }
+  
+  const isCreditNote = text.toLowerCase().includes('credit note');
+  const orders: ParsedOrder[] = [];
+  
+  // Replace newlines with spaces to handle multi-line wraps in items
+  const cleanText = text.replace(/\s+/g, ' ');
+  
+  // Find all item indices
+  const itemRegex = /\b(\d+)\.\s+(?=\b99\d{4}\b|\b[A-Z0-9-]+\b\s+[\d-]+\b\s+\b99\d{4}\b)/g;
+  const matches: { index: number; number: string }[] = [];
+  let match;
+  while ((match = itemRegex.exec(cleanText)) !== null) {
+    matches.push({
+      index: match.index,
+      number: match[1]
+    });
+  }
+  
+  for (let i = 0; i < matches.length; i++) {
+    const startIdx = matches[i].index;
+    const endIdx = (i + 1 < matches.length) ? matches[i + 1].index : cleanText.indexOf('Total:', startIdx);
+    const itemText = cleanText.substring(startIdx, endIdx !== -1 ? endIdx : cleanText.length).trim();
+    
+    // Look for HSN/SAC (usually 6 digits starting with 99)
+    const hsnMatch = itemText.match(/\b(99\d{4})\b/);
+    if (!hsnMatch) continue;
+    const hsn = hsnMatch[1];
+    
+    const hsnIdx = itemText.indexOf(hsn);
+    const afterHsn = itemText.substring(hsnIdx + hsn.length).trim();
+    
+    let description = '';
+    let taxableAmount = 0;
+    let taxAmount = 0;
+    
+    // Regex to match INR values in the item block
+    const inrRegex = /(-?\s*INR\s*-?|INR\s*-?)\s*([\d,]+\.\d{2})/gi;
+    const amounts: number[] = [];
+    let inrMatch;
+    while ((inrMatch = inrRegex.exec(itemText)) !== null) {
+      const valStr = inrMatch[2].replace(/,/g, '');
+      let val = parseFloat(valStr);
+      if (inrMatch[1].includes('-') || itemText.includes(`-${inrMatch[0]}`) || itemText.includes(`- ${inrMatch[0]}`)) {
+        val = -val;
+      }
+      amounts.push(val);
+    }
+    
+    if (amounts.length >= 1) {
+      taxableAmount = amounts[0];
+    }
+    if (amounts.length >= 2) {
+      taxAmount = amounts.slice(1).reduce((sum, val) => sum + val, 0);
+    }
+    
+    // Extract description (everything after HSN up to first INR)
+    const inrIndex = afterHsn.search(/-?\s*INR/i);
+    if (inrIndex !== -1) {
+      description = afterHsn.substring(0, inrIndex).trim();
+    } else {
+      description = afterHsn;
+    }
+    
+    description = description.replace(/^\s*-\s*/, '').trim();
+    
+    const absTaxable = Math.abs(taxableAmount);
+    const absTax = Math.abs(taxAmount);
+    const totalCost = absTaxable + absTax;
+    
+    orders.push({
+      order_id: invoiceNo,
+      order_date: invoiceDate,
+      marketplace: 'amazon',
+      product_name: description || 'Amazon Marketplace Service Fee',
+      sku: hsn || null,
+      quantity: 1,
+      selling_price: 0,
+      marketplace_commission: absTaxable,
+      shipping_charges: 0,
+      tax: absTax,
+      total_amount: 0,
+      net_settlement_amount: isCreditNote ? totalCost : -totalCost,
+      order_status: 'delivered'
+    });
+  }
+  
+  return orders;
+}
