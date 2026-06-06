@@ -312,6 +312,15 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
       // Skip empty rows
       if (values.every(v => !v.trim())) continue;
 
+      // For Amazon, only import 'Order' and 'Refund' transaction types
+      const typeIndex = normalizedHeaders.indexOf('type');
+      if (marketplace === 'amazon' && typeIndex !== -1) {
+        const rowType = values[typeIndex]?.replace(/"/g, '').trim().toLowerCase();
+        if (rowType && rowType !== 'order' && rowType !== 'refund') {
+          continue;
+        }
+      }
+
       const getValue = (field: string): string => {
         const index = columnMap[field];
         return index !== undefined ? values[index]?.replace(/"/g, '').trim() || '' : '';

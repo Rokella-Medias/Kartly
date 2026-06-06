@@ -34,10 +34,10 @@ async function excelToCSV(file: File): Promise<string> {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         
-        // Find sheet name containing "order", "sale", "tcs", or "invoice", case-insensitive
+        // Find sheet name containing "order", "sale", "tcs", "invoice", "transaction", "b2b", or "b2c", case-insensitive
         let targetSheetName = workbook.SheetNames[0];
         const orderSheet = workbook.SheetNames.find(name => 
-          /order|sale|tcs|invoice|transaction/i.test(name)
+          /order|sale|tcs|invoice|transaction|b2b|b2c/i.test(name)
         );
         if (orderSheet) {
           targetSheetName = orderSheet;
@@ -238,7 +238,7 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
           <span className="hidden sm:inline">Upload CSV</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg overflow-hidden">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5" />
