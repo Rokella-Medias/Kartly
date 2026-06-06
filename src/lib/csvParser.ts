@@ -362,6 +362,7 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
 
   const orders: ParsedOrder[] = [];
   const errors: string[] = [];
+  const orderIdCounts: Record<string, number> = {};
 
   // Parse data rows starting after header row
   for (let i = headerIndex + 1; i < lines.length; i++) {
@@ -435,6 +436,15 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
       // Calculate net settlement if not provided or 0
       if (order.net_settlement_amount === 0 && order.total_amount !== 0) {
         order.net_settlement_amount = order.total_amount - order.marketplace_commission - order.shipping_charges;
+      }
+
+      // Ensure unique order_id by appending suffix for duplicates
+      const base_order_id = order.order_id;
+      if (base_order_id) {
+        orderIdCounts[base_order_id] = (orderIdCounts[base_order_id] || 0) + 1;
+        if (orderIdCounts[base_order_id] > 1) {
+          order.order_id = `${base_order_id}-${orderIdCounts[base_order_id] - 1}`;
+        }
       }
 
       orders.push(order);
@@ -569,7 +579,7 @@ export function parseAmazonPDFText(text: string): ParsedOrder[] {
     const totalCost = absTaxable + absTax;
     
     orders.push({
-      order_id: matches.length > 1 ? `${invoiceNo}-${i + 1}` : invoiceNo,
+      order_id: i > 0 ? `${invoiceNo}-${i}` : invoiceNo,
       order_date: invoiceDate,
       marketplace: 'amazon',
       product_name: description || 'Amazon Marketplace Service Fee',
