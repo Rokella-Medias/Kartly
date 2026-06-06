@@ -260,17 +260,17 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
       <DialogTrigger asChild>
         <Button className="gradient-primary text-primary-foreground h-8 sm:h-9 px-2 sm:px-4 text-xs sm:text-sm">
           <Upload className="w-4 h-4 sm:mr-2" />
-          <span className="hidden sm:inline">Upload CSV</span>
+          <span className="hidden sm:inline">Upload Data / PDF</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5" />
-            Upload Sales Data
+            Upload Sales & Expenses
           </DialogTitle>
           <DialogDescription>
-            Upload your marketplace CSV or Excel file to import orders
+            Upload your marketplace CSV, Excel, or PDF files to import orders and expenses
           </DialogDescription>
         </DialogHeader>
 
@@ -289,10 +289,10 @@ export function CSVUpload({ onUploadComplete }: CSVUploadProps) {
                 <input {...getInputProps()} />
                 <Upload className="w-10 h-10 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-foreground font-medium mb-1">
-                  {isDragActive ? 'Drop your file here' : 'Drag & drop your CSV or Excel file'}
+                  {isDragActive ? 'Drop your file here' : 'Drag & drop your CSV, Excel, or PDF file'}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Supports .csv, .xlsx, and .xls files
+                  Supports .csv, .xlsx, .xls, and .pdf files
                 </p>
               </div>
 
