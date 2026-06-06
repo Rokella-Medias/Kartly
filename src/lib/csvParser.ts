@@ -266,6 +266,41 @@ export function findHeaderRowIndex(lines: string[], marketplace: Marketplace): n
   return 0;
 }
 
+function getProductNameFromHSN(hsn: string): string {
+  if (!hsn) return 'Unknown Product';
+  const cleanHSN = hsn.replace(/[^0-9]/g, '').trim();
+  
+  if (cleanHSN.startsWith('9018')) {
+    return 'Medical Equipment & Lancets';
+  }
+  if (cleanHSN.startsWith('9021')) {
+    return 'Hearing Aids & Amplifiers';
+  }
+  if (cleanHSN.startsWith('6115')) {
+    return 'Socks & Compression Stockings';
+  }
+  if (cleanHSN.startsWith('3304')) {
+    return 'Cosmetics & Skin Care';
+  }
+  if (cleanHSN.startsWith('9506')) {
+    return 'Sports & Fitness Equipment';
+  }
+  if (cleanHSN.startsWith('4015')) {
+    return 'Rubber Gloves & Medical Accessories';
+  }
+  if (cleanHSN.startsWith('3926')) {
+    return 'Plastic Household Articles';
+  }
+  if (cleanHSN.startsWith('9613')) {
+    return 'Pocket Lighters & Accessories';
+  }
+  if (cleanHSN === '804103' || cleanHSN.startsWith('0804')) {
+    return 'Dates / Dried Fruits';
+  }
+  
+  return `Meesho Product (HSN ${hsn})`;
+}
+
 export function parseCSV(csvText: string, marketplace: Marketplace): { orders: ParsedOrder[]; errors: string[] } {
   const lines = csvText.split('\n').filter(line => line.trim());
   if (lines.length < 2) {
@@ -340,11 +375,15 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
         order_id = `${marketplace.toUpperCase()}-SUMMARY-${order_date}`;
       }
 
+      // Check if we can get HSN code from headers
+      const hsnIndex = normalizedHeaders.findIndex(h => h.includes('hsn'));
+      const hsnCode = hsnIndex !== -1 ? values[hsnIndex]?.replace(/"/g, '').trim() || '' : '';
+
       const product_name = getValue('product_name');
       const sku = getValue('sku');
 
       // Skip rows without essential data
-      if (!order_id && !product_name && !sku) {
+      if (!order_id && !product_name && !sku && !hsnCode) {
         continue;
       }
 
@@ -352,8 +391,8 @@ export function parseCSV(csvText: string, marketplace: Marketplace): { orders: P
         order_id: order_id || `${marketplace.toUpperCase()}-${Date.now()}-${i}`,
         order_date,
         marketplace,
-        product_name: product_name || sku || (order_id.includes('SUMMARY') ? 'Daily Sales Summary' : 'Unknown Product'),
-        sku: sku || null,
+        product_name: product_name || sku || (hsnCode ? getProductNameFromHSN(hsnCode) : (order_id.includes('SUMMARY') ? 'Daily Sales Summary' : 'Unknown Product')),
+        sku: sku || (hsnCode ? `HSN-${hsnCode}` : null),
         quantity: Math.max(1, Math.round(parseNumber(getValue('quantity')))),
         selling_price: parseNumber(getValue('selling_price')),
         marketplace_commission: Math.abs(parseNumber(getValue('marketplace_commission'))),
