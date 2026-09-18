@@ -1,0 +1,42 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Runs every 2 days at 04:00 UTC to prevent Supabase free tier from pausing
+    - cron: '0 4 */2 * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions tab
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database & Auth APIs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "❌ Required repository secrets (SUPABASE_URL, SUPABASE_SECRET_KEY) are missing."
+            echo "Please configure them in your GitHub repo: Settings -> Secrets and variables -> Actions"
+            exit 1
+          fi
+
+          echo "Connecting to Supabase at $SUPABASE_URL..."
+
+          echo "1. Pinging PostgREST schema (keeps Postgres DB active)..."
+          REST_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "apikey: $SUPABASE_SECRET_KEY" "$SUPABASE_URL/rest/v1/")
+          echo "REST API Status Code: $REST_STATUS"
+
+          if [ -n "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "2. Pinging GoTrue Auth Health..."
+            AUTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "apikey: $SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_URL/auth/v1/health")
+            echo "Auth API Status Code: $AUTH_STATUS"
+          fi
+
+          if [ "$REST_STATUS" -eq 200 ]; then
+            echo "✅ Supabase ping successful! Inactivity timer has been reset."
+          else
+            echo "❌ Failed to ping Supabase REST API (Status: $REST_STATUS)."
+            exit 1
+          fi

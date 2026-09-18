@@ -11,12 +11,30 @@ node_modules/
 # 🔐 Environment Variables & Secrets
 # ==========================================
 .env
+.env.*
+!.env.example
+*.env
+*.local
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-*.env
-*.local
+
+# API keys, certs & service accounts
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*serviceAccount*.json
+*service-account*.json
+firebase-adminsdk*.json
+
+# ==========================================
+# 📁 User Uploads & Sensitive Data
+# ==========================================
+uploads/*
+!uploads/.gitkeep
 
 # ==========================================
 # 🛠️ Editor & System Files
@@ -34,11 +52,13 @@ node_modules/
 Thumbs.db
 
 # ==========================================
-# 🚀 Firebase Configurations & Caches
+# 🚀 Firebase & Supabase Temp Configurations
 # ==========================================
 .firebase/
 firebase-debug.log
 ui-debug.log
+supabase/.temp/
+supabase/.branches/
 
 # ==========================================
 # 🧪 Testing & Coverage
