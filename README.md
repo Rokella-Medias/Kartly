@@ -1,6 +1,6 @@
-# 📊 Kartly — Unified E-Commerce Analytics Dashboard
+# 📊 Kartly — Multi-Platform E-Commerce Analytics
 
-Kartly is a high-performance, premium e-commerce insights hub built using **React (TypeScript)**, **Vite**, **Tailwind CSS**, and **Shadcn UI**. It empowers online sellers to consolidate and normalize order sales CSVs from major marketplaces (**Amazon**, **Flipkart**, and **Meesho**) into a single, cohesive dashboard with tax-ready report exports.
+Kartly is a high-performance, unified e-commerce analytics hub built using **React 18 (TypeScript)**, **Vite**, **Tailwind CSS**, and **Shadcn UI**. Online merchants can consolidate and normalize sales reports from major marketplaces (**Amazon**, **Flipkart**, and **Meesho**) into a single, cohesive dashboard with tax-ready report exports.
 
 ---
 
@@ -9,43 +9,83 @@ Kartly is a high-performance, premium e-commerce insights hub built using **Reac
 - 📁 **Marketplace CSV Import**: Import order CSV/Excel sheets directly from Amazon, Flipkart, and Meesho.
 - 📈 **Unified Financial Analytics**: Track net settlement, gross revenue, order volume, and average order value across multiple sales channels.
 - 📑 **CA-Audit Ready Reports**: Generate and export government-compliant GST returns (GSTR-1, GSTR-3B formats), invoice-level tax registers, commission breakdowns, and product sales summaries.
-- 🔒 **Row-Level Security (RLS)**: Fine-grained security policies ensure that every user's data remains isolated and completely private.
-- 🌗 **Responsive Design & Dark Mode**: Sleek glassmorphism and animations tailored for desktops, tablets, and mobile devices.
+- 🔒 **Row-Level Security (RLS)**: Fine-grained PostgreSQL security policies ensure that every user's data remains isolated and completely private.
+- 🌗 **Responsive Design & Dark Mode**: Sleek modern UI tailored for desktops, tablets, and mobile devices.
+- 🤖 **Automated Database Keep-Alive**: Built-in GitHub Actions workflow to prevent Supabase free tier inactivity auto-pause.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Core Framework**: [React 18](https://react.dev/) & [TypeScript](https://www.typescriptlang.org/)
-- **Build Tool**: [Vite](https://vitejs.dev/) (fast HMR, optimized production builds)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/) (using Radix UI primitives)
+- **Frontend**: [React 18](https://react.dev/) & [TypeScript](https://www.typescriptlang.org/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/) (Radix UI)
 - **Database & Authentication**: [Supabase](https://supabase.com/) (PostgreSQL with RLS)
-- **Deployment**: [Firebase Hosting](https://firebase.google.com/products/hosting)
+- **Hosting**: [Firebase Hosting](https://firebase.google.com/products/hosting)
+- **Automation**: [GitHub Actions](https://github.com/features/actions)
+
+---
+
+## 📂 Project Structure
+
+```text
+Kartly/
+├── .github/
+│   └── workflows/
+│       └── keep-supabase-alive.yml    # Supabase keep-alive cron job
+├── public/                            # Static assets (favicons, robots.txt)
+├── src/
+│   ├── assets/                        # Images, logos, branding assets
+│   ├── components/
+│   │   ├── dashboard/                 # Dashboard widgets, charts, and tables
+│   │   ├── reports/                   # Report export cards & utilities
+│   │   └── ui/                        # Reusable Radix UI & Shadcn components
+│   ├── hooks/                         # Custom React hooks (useAuth, useAdmin, etc.)
+│   ├── integrations/
+│   │   └── supabase/                  # Supabase client & generated Database types
+│   ├── lib/                           # Utility functions & parsers
+│   ├── pages/                         # Route pages (Dashboard, Login, Signup, Reports)
+│   ├── types/                         # Shared TypeScript interfaces & types
+│   ├── App.tsx                        # Main application router
+│   └── main.tsx                       # React application entrypoint
+├── supabase/
+│   ├── functions/                     # Supabase Edge Functions
+│   ├── migrations/                    # Database migrations history
+│   ├── supabase_setup.sql             # Consolidated database schema & setup script
+│   └── config.toml                    # Supabase CLI project configuration
+├── uploads/                           # Local sample CSVs for testing (git-ignored)
+├── .env.example                       # Example environment variables template
+├── firebase.json                      # Firebase Hosting configuration
+├── package.json                       # Project dependencies and npm scripts
+├── tailwind.config.ts                 # Tailwind design system configuration
+└── vite.config.ts                     # Vite build & development configuration
+```
 
 ---
 
 ## 🚀 Local Development Setup
 
-To run this application locally, follow these steps:
-
 ### 1. Prerequisites
 - [Node.js](https://nodejs.org/) (v18+ recommended)
-- A [Supabase](https://supabase.com/) account (Free tier is sufficient)
-- A [Firebase](https://firebase.google.com/) project
+- [npm](https://www.npmjs.com/)
 
 ### 2. Clone and Install
-Clone the repository and install all dependencies:
-```sh
+```bash
+git clone https://github.com/Rokella-Medias/Kartly.git
+cd Kartly
 npm install
 ```
 
-### 3. Environment Variables Configuration
-Create a `.env` file in the root directory (refer to [.env.example](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/.env.example) as a template) and add your Supabase and Firebase keys:
+### 3. Environment Variables
+Create a `.env` file in the root directory (refer to `.env.example` as a template):
 ```env
 # Supabase Configuration
 VITE_SUPABASE_PROJECT_ID="your-supabase-project-id"
 VITE_SUPABASE_URL="https://your-supabase-project-id.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="your-supabase-anon-key"
+VITE_SUPABASE_PUBLISHABLE_KEY="your-supabase-anon-or-publishable-key"
+
+# Supabase Server Key (Server / GitHub Actions only)
+SUPABASE_SERVICE_ROLE_KEY="your-supabase-secret-key"
 
 # Firebase Configuration
 VITE_FIREBASE_API_KEY="your-firebase-api-key"
@@ -58,58 +98,25 @@ VITE_FIREBASE_MEASUREMENT_ID="your-firebase-measurement-id"
 ```
 
 ### 4. Database Setup (Supabase)
-Run the SQL migrations located in the [supabase/migrations/](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/supabase/migrations/) folder in your Supabase project's SQL Editor:
-1. Copy the contents of the SQL migration files (or run them using the Supabase CLI).
-2. Execute them in your Supabase SQL Editor. This sets up the `profiles`, `orders`, `csv_uploads`, and `user_roles` tables along with their RLS policies and onboarding triggers.
+Run the consolidated script in your Supabase SQL Editor:
+1. Open [`supabase/supabase_setup.sql`](./supabase/supabase_setup.sql).
+2. Copy and execute the script in [Supabase SQL Editor](https://supabase.com/dashboard).
+3. This creates all tables (`profiles`, `orders`, `csv_uploads`, `user_roles`), triggers, and RLS policies.
 
 ### 5. Start Development Server
-```sh
+```bash
 npm run dev
 ```
 Open **[http://localhost:8080](http://localhost:8080)** in your browser.
 
 ---
 
-## 🔑 Config OAuth (Google Sign-In)
-
-To set up Google login for local and production:
-
-1. **Google Cloud Console**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/).
-   - Set up your OAuth consent screen.
-   - Under **Credentials**, create an **OAuth 2.0 Client ID** (Web application).
-   - In **Authorized JavaScript origins**, add your local URL (`http://localhost:8080`) and your production URL (e.g., `https://your-app.web.app`).
-   - In **Authorized redirect URIs**, add your Supabase project callback URL:
-     `https://<your-supabase-project-id>.supabase.co/auth/v1/callback`
-
-2. **Supabase Console**:
-   - Navigate to **Authentication** -> **Providers** -> **Google**.
-   - Enable Google authentication.
-   - Paste your Google **Client ID** and **Client Secret**.
-   - Save changes.
-   - Go to **URL Configuration** and add your redirect URLs (e.g., `http://localhost:8080/**` and `https://your-app.web.app/**`).
-
----
-
 ## 📦 Deployment
 
-This project uses [Firebase Hosting](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/firebase.json) for static file hosting:
-
-```sh
-# Step 1: Build the production bundle
+```bash
+# Build the production bundle
 npm run build
 
-# Step 2: Deploy to Firebase Hosting
-firebase deploy --only hosting
+# Deploy to Firebase Hosting
+npx firebase-tools deploy --only hosting
 ```
-Production assets are generated in the `dist/` directory and uploaded securely.
-
----
-
-## 📂 Core Codebase Links
-
-- 🛠️ [Vite Configuration](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/vite.config.ts)
-- 🔌 [Supabase Integration Client](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/src/integrations/supabase/client.ts)
-- 🔥 [Firebase Integration Client](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/src/lib/firebase.ts)
-- 🔒 [Route Guards (RequireProfile)](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/src/components/RequireProfile.tsx)
-- 🚪 [Login Page](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/src/pages/Login.tsx) | [Signup Page](file:///c:/Users/thaku/OneDrive/Desktop/Work/e-commerce-insights-hub-main/src/pages/Signup.tsx)
